@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use App\Models\Religion;
 use Barryvdh\DomPDF\PDF;
+use Illuminate\Contracts\Session\Session;
 use Illuminate\Http\Request;
 
 class EmployeeController extends Controller
@@ -12,8 +14,10 @@ class EmployeeController extends Controller
     {
         if ($request->has('search')) {
             $data = Employee::where('nama', 'LIKE', '%' . $request->search . '%')->paginate(5);
+            // Session::put('halaman_url', request()->fullUrl());
         } else {
             $data = Employee::paginate(5);
+            // Session::put('halaman_url', request()->fullUrl());
         }
 
         return view('datapegawai', compact('data'));
@@ -21,12 +25,19 @@ class EmployeeController extends Controller
 
     public function tambahpegawai()
     {
-        return view('tambahdata');
+        $dataagama = Religion::all();
+        return view('tambahdata', compact('dataagama'));
     }
 
     public function insertdata(Request $request)
     {
         // dd($request->all());
+        $this->validate($request, [
+            'nama' => 'required|max:20',
+            'telp' => 'required|min:11|max:12',
+        ]);
+
+
         $data = Employee::create($request->all());
         if ($request->hasFile('foto')) {
             $request->file('foto')->move('fotopegawai/', $request->file('foto')->getClientOriginalName());
@@ -45,8 +56,17 @@ class EmployeeController extends Controller
 
     public function updatedata(Request $request, $id)
     {
+        $this->validate($request, [
+            'nama' => 'required|max:20',
+            'telp' => 'required|min:11|max:12',
+        ]);
+
         $data = Employee::find($id);
         $data->update($request->all());
+        if (session('halaman_url')) {
+            return Redirect(session('halaman_url'))->with('success', 'Data Berhasil Diubah');
+        }
+
         return redirect()->route('pegawai')->with('success', 'Data Berhasil Diubah');
     }
 
